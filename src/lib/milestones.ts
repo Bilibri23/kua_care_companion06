@@ -17,6 +17,22 @@ export async function loadChildMilestones(childId: string): Promise<MilestoneSta
   return map;
 }
 
+// localStorage fallback so progress never silently reverts when there is no
+// active child (or while signed out). Keyed per user (or "anon").
+const lsKey = (scope: string) => `kua_milestones_${scope}`;
+
+export function loadLocalMilestones(scope: string): MilestoneState {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(lsKey(scope)) || "{}"); } catch { return {}; }
+}
+
+export function setLocalMilestone(scope: string, slug: string, key: string | number, done: boolean) {
+  if (typeof window === "undefined") return;
+  const map = loadLocalMilestones(scope);
+  map[milestoneId(slug, key)] = done;
+  localStorage.setItem(lsKey(scope), JSON.stringify(map));
+}
+
 /** Upsert a single milestone's done state for a child. */
 export async function setChildMilestone(opts: {
   userId: string;

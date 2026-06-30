@@ -97,13 +97,19 @@ export function CentersManager({ onAudit }: { onAudit?: (action: string, detail?
     const required = ["name", "category", "latitude", "longitude"];
     const missing = required.filter((c) => !headers.includes(c));
     if (missing.length) return toast.error(`Missing columns: ${missing.join(", ")}`);
-    const rowsToInsert = lines.slice(1).map((line) => {
+    const skipped: string[] = [];
+    const rowsToInsert = lines.slice(1).map((line, i) => {
       const cols = parseCsvLine(line);
       const get = (k: string) => cols[headers.indexOf(k)] ?? "";
       const services = get("services_offered").split("|").map((s) => s.trim()).filter(Boolean);
+      const category = normalizeCategory(get("category"));
+      if (!category) {
+        skipped.push(`row ${i + 2}: unknown category "${get("category")}"`);
+        return null;
+      }
       return {
         name: get("name"),
-        category: get("category") as CenterCategory,
+        category,
         description: get("description") || null,
         services_offered: services,
         address: get("address") || null,
@@ -115,13 +121,19 @@ export function CentersManager({ onAudit }: { onAudit?: (action: string, detail?
         email: get("email") || null,
         website: get("website") || null,
         opening_hours: get("opening_hours") || null,
-        verification_status: (get("verification_status") || "pending") as Row["verification_status"],
+        verification_status: normalizeStatus(get("verification_status")),
       };
-    });
+    }).filter((r): r is NonNullable<typeof r> => r !== null);
+
+    if (rowsToInsert.length === 0) {
+      return toast.error("No valid rows to import.", { description: skipped.slice(0, 4).join("; ") });
+    }
     const { error, count } = await supabase.from("autism_centers").insert(rowsToInsert, { count: "exact" });
     if (error) return toast.error("Import failed", { description: error.message });
-    toast.success(`Imported ${count ?? rowsToInsert.length} rows.`);
-    onAudit?.("center.import", { count: rowsToInsert.length });
+    const base = `Imported ${count ?? rowsToInsert.length} rows.`;
+    if (skipped.length) toast.warning(base, { description: `Skipped ${skipped.length}: ${skipped.slice(0, 3).join("; ")}${skipped.length > 3 ? "…" : ""}` });
+    else toast.success(base);
+    onAudit?.("center.import", { count: rowsToInsert.length, skipped: skipped.length });
     void load();
   }
 
@@ -448,6 +460,30 @@ function Field({ label, children, className = "" }: { label: string; children: R
       {children}
     </label>
   );
+}
+
+// Map any case/spacing/hyphen variant of a category to the Postgres enum value.
+function normalizeCategory(raw: string): CenterCategory | null {
+  const norm = raw.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if ((CENTER_CATEGORIES as readonly string[]).includes(norm)) return norm as CenterCategory;
+  // Friendly-label fallback (e.g. "NGO", "Special Needs School").
+  const aliases: Record<string, CenterCategory> = {
+    ngo: "ngo",
+    "non_governmental_organization": "ngo",
+    special_needs_school: "special_school",
+    special: "special_school",
+    inclusive: "inclusive_school",
+    therapy: "therapy_center",
+    speech: "speech_therapist",
+    occupational: "occupational_therapist",
+    paediatrician: "pediatrician",
+  };
+  return aliases[norm] ?? null;
+}
+
+function normalizeStatus(raw: string): Row["verification_status"] {
+  const v = raw.trim().toLowerCase();
+  return v === "verified" || v === "rejected" ? v : "pending";
 }
 
 function parseCsvLine(line: string): string[] {

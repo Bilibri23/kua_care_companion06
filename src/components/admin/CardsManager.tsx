@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Trash2, Pencil, Search, X, Eye, EyeOff, Upload, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CATEGORIES } from "@/lib/comm-data";
+import { CATEGORIES, CARDS as STATIC_CARDS } from "@/lib/comm-data";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 
 type Row = {
@@ -161,6 +161,34 @@ export function CardsManager({ onAudit }: { onAudit?: (action: string, detail?: 
     }
   }
 
+  async function importBuiltins() {
+    if (!confirm("Import the built-in communication cards into the database so they can be edited? Existing rows with the same key are updated.")) return;
+    setImporting(true);
+    try {
+      const payload = STATIC_CARDS.map((c, i) => ({
+        key: c.key,
+        label_en: c.label,
+        label_fr: c.fr ?? null,
+        category: c.category,
+        tone: c.tone ?? "primary",
+        image_url: null, // built-in image is the bundled asset; comm page falls back by key
+        swatch: c.swatch ?? null,
+        sort_order: i,
+        published: true,
+      }));
+      const { error } = await supabase.from("expression_cards").upsert(payload, { onConflict: "key" });
+      if (error) {
+        toast.error("Import failed", { description: error.message });
+        return;
+      }
+      onAudit?.("card.import", { count: payload.length, builtins: true });
+      toast.success(`Imported ${payload.length} built-in cards. You can now edit them.`);
+      void load();
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function downloadTemplate() {
     const headers = ["key", "label_en", "label_fr", "category", "tone", "image_url", "swatch", "sort_order", "published"];
     const sample = ["sample-key", "Happy", "Heureux", "emotions", "secondary", "", "", "0", "true"];
@@ -224,6 +252,13 @@ export function CardsManager({ onAudit }: { onAudit?: (action: string, detail?: 
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted"
           >
             <Download className="h-4 w-4" /> Template
+          </button>
+          <button
+            onClick={() => void importBuiltins()}
+            disabled={importing}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" /> Import built-ins
           </button>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">

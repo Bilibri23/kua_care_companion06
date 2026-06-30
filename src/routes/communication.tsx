@@ -27,6 +27,7 @@ function CommPage() {
   const [aiText, setAiText] = useState<string | null>(null);
   const [openCard, setOpenCard] = useState<CommCard | null>(null);
   const [dbCards, setDbCards] = useState<CommCard[]>([]);
+  const [seeded, setSeeded] = useState(false);
   const { speak, pause, resume, stop, status, supported } = useTTS(lang, voiceRate);
 
   useEffect(() => {
@@ -38,22 +39,24 @@ function CommPage() {
         .eq("published", true)
         .order("sort_order");
       if (cancelled || !data) return;
-      const staticKeys = new Set(STATIC_CARDS.map((c) => c.key));
+      const staticByKey = new Map(STATIC_CARDS.map((c) => [c.key, c]));
       const mapped: CommCard[] = (data as Array<{
         key: string; label_en: string; label_fr: string | null; category: string;
         tone: string; image_url: string | null; swatch: string | null;
-      }>)
-        .filter((r) => !staticKeys.has(r.key))
-        .map((r) => ({
-          key: r.key,
-          label: r.label_en,
-          fr: r.label_fr ?? r.label_en,
-          emoji: "",
-          category: (r.category as CategoryKey),
-          tone: (["primary", "secondary", "tertiary", "info"].includes(r.tone) ? r.tone : "primary") as CommCard["tone"],
-          img: r.image_url ?? undefined,
-          swatch: r.swatch ?? undefined,
-        }));
+      }>).map((r) => ({
+        key: r.key,
+        label: r.label_en,
+        fr: r.label_fr ?? r.label_en,
+        emoji: "",
+        category: (r.category as CategoryKey),
+        tone: (["primary", "secondary", "tertiary", "info"].includes(r.tone) ? r.tone : "primary") as CommCard["tone"],
+        // Seeded built-ins carry no image_url — reuse the bundled static image by key.
+        img: r.image_url ?? staticByKey.get(r.key)?.img,
+        swatch: r.swatch ?? staticByKey.get(r.key)?.swatch,
+      }));
+      // "Seeded" = built-ins were imported into the DB → DB is authoritative
+      // (so unpublishing a shipped card hides it). Otherwise merge static + DB.
+      setSeeded(mapped.some((c) => staticByKey.has(c.key)));
       setDbCards(mapped);
     })();
     return () => {
@@ -61,7 +64,12 @@ function CommPage() {
     };
   }, []);
 
-  const CARDS = useMemo(() => [...STATIC_CARDS, ...dbCards], [dbCards]);
+  const CARDS = useMemo(() => {
+    if (seeded) return dbCards; // DB authoritative once built-ins imported
+    const merged = new Map(STATIC_CARDS.map((c) => [c.key, c]));
+    for (const c of dbCards) merged.set(c.key, c); // DB edits override; DB-only appended
+    return [...merged.values()];
+  }, [dbCards, seeded]);
 
   const makeSentence = async () => {
     if (!sentence.length) return;

@@ -69,6 +69,13 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Cloudflare passes vars/secrets via `env`, not process.env. Copy them in
+      // so server routes (e.g. AI key lookup in getAiProvider) can read them.
+      if (env && typeof env === "object" && typeof process !== "undefined" && process.env) {
+        for (const [k, v] of Object.entries(env as Record<string, unknown>)) {
+          if (typeof v === "string" && process.env[k] === undefined) process.env[k] = v;
+        }
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

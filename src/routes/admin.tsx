@@ -40,6 +40,8 @@ import { CentersManager } from "@/components/admin/CentersManager";
 import { BlogManager } from "@/components/admin/BlogManager";
 import { LessonsManager } from "@/components/admin/LessonsManager";
 import { CardsManager } from "@/components/admin/CardsManager";
+import { SubjectsManager } from "@/components/admin/SubjectsManager";
+import { JourneysManager } from "@/components/admin/JourneysManager";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -103,6 +105,8 @@ type Tab =
   | "centers"
   | "blog"
   | "lessons"
+  | "subjects"
+  | "journeys"
   | "cards"
   | "roles"
   | "audits"
@@ -430,6 +434,8 @@ function AdminPage() {
               ["centers", "Centers", MapPin],
               ["blog", "Blog posts", Newspaper],
               ["lessons", "Lesson notes", BookOpen],
+              ["subjects", "Learning subjects", BookOpen],
+              ["journeys", "Growth journeys", TrendingUp],
               ["cards", "Expression cards", LayoutGrid],
               ["roles", "Roles", Users],
               ["audits", "Audit log", ScrollText],
@@ -617,6 +623,12 @@ function AdminPage() {
         {tab === "blog" && <BlogManager onAudit={(a, d) => void logAudit(a, { detail: d })} />}
         {tab === "lessons" && (
           <LessonsManager onAudit={(a, d) => void logAudit(a, { detail: d })} />
+        )}
+        {tab === "subjects" && (
+          <SubjectsManager onAudit={(a, d) => void logAudit(a, { detail: d })} />
+        )}
+        {tab === "journeys" && (
+          <JourneysManager onAudit={(a, d) => void logAudit(a, { detail: d })} />
         )}
         {tab === "cards" && <CardsManager onAudit={(a, d) => void logAudit(a, { detail: d })} />}
 

@@ -10,32 +10,24 @@ import { richSubjects, pickLang } from "@/lib/subjects-content";
 import { usePrefs } from "@/lib/prefs";
 import { useAuth } from "@/lib/auth";
 import { useChildren } from "@/lib/children";
-import { journeys as journeyContent } from "@/lib/kua-content";
-import { loadChildMilestones, milestoneId } from "@/lib/milestones";
+import { loadChildMilestones, loadLocalMilestones, milestoneId } from "@/lib/milestones";
+import { loadJourneys, loadSubjects, type LJourney } from "@/lib/content";
+import type { RichSubject } from "@/lib/subjects-content";
 import { useEffect, useState } from "react";
+
+const ICON_BY_SLUG: Record<string, any> = {
+  "communication": MessageCircle, "emotional-regulation": HeartHandshake, "social-skills": Users,
+  "independence": Backpack, "cognitive-skills": Brain, "physical-coordination": Activity,
+};
+const TONE_BY_SLUG: Record<string, string> = {
+  "communication": "primary", "emotional-regulation": "tertiary", "social-skills": "secondary",
+  "independence": "primary", "cognitive-skills": "tertiary", "physical-coordination": "secondary",
+};
 
 export const Route = createFileRoute("/growth")({
   head: () => ({ meta: [{ title: "Growth - KUA" }, { name: "description", content: "Developmental milestones celebrated, never graded - for children 12 and under." }] }),
   component: GrowthPage,
 });
-
-const journeysEn = [
-  { slug: "communication", icon: MessageCircle, title: "Communication", progress: 64, milestones: 12, done: 7, tone: "primary" },
-  { slug: "emotional-regulation", icon: HeartHandshake, title: "Emotional Regulation", progress: 48, milestones: 10, done: 5, tone: "tertiary" },
-  { slug: "social-skills", icon: Users, title: "Social Skills", progress: 32, milestones: 8, done: 3, tone: "secondary" },
-  { slug: "independence", icon: Backpack, title: "Independence", progress: 70, milestones: 9, done: 6, tone: "primary" },
-  { slug: "cognitive-skills", icon: Brain, title: "Cognitive Skills", progress: 41, milestones: 11, done: 4, tone: "tertiary" },
-  { slug: "physical-coordination", icon: Activity, title: "Physical Coordination", progress: 55, milestones: 7, done: 4, tone: "secondary" },
-];
-
-const journeysFr: Record<string, string> = {
-  "communication": "Communication",
-  "emotional-regulation": "Régulation émotionnelle",
-  "social-skills": "Habiletés sociales",
-  "independence": "Autonomie",
-  "cognitive-skills": "Habiletés cognitives",
-  "physical-coordination": "Coordination physique",
-};
 
 const subjectIcons: Record<string, any> = {
   "languages": Languages, "arithmetic": Calculator, "writing": PencilLine, "reading": BookOpen,
@@ -81,20 +73,25 @@ function GrowthPage() {
   const { user } = useAuth();
   const { activeChild } = useChildren();
 
-  // Per-journey stats. Demo defaults until real per-child data loads.
-  const [stats, setStats] = useState<Record<string, JourneyStat>>(() =>
-    Object.fromEntries(journeysEn.map((j) => [j.slug, { done: j.done, milestones: j.milestones, progress: j.progress }])),
-  );
+  // Journeys & subjects load DB-first (admin-editable), with milestone progress.
+  const [journeyList, setJourneyList] = useState<LJourney[]>([]);
+  const [subjectList, setSubjectList] = useState<RichSubject[]>([]);
+  const [stats, setStats] = useState<Record<string, JourneyStat>>({});
 
   useEffect(() => {
     let cancelled = false;
     async function hydrate() {
-      if (!user || !activeChild) return; // keep demo defaults when signed out
-      const saved = await loadChildMilestones(activeChild.id);
+      const [js, subs] = await Promise.all([loadJourneys(), loadSubjects()]);
+      if (cancelled) return;
+      setJourneyList(js);
+      setSubjectList(subs);
+      const saved = user && activeChild
+        ? await loadChildMilestones(activeChild.id)
+        : loadLocalMilestones(activeChild ? `child_${activeChild.id}` : user ? `user_${user.id}` : "anon");
       if (cancelled) return;
       const next: Record<string, JourneyStat> = {};
-      for (const j of journeysEn) {
-        const total = journeyContent.find((c) => c.slug === j.slug)?.milestones.length ?? j.milestones;
+      for (const j of js) {
+        const total = j.milestones.length;
         let done = 0;
         for (let i = 0; i < total; i++) if (saved[milestoneId(j.slug, i)]) done++;
         next[j.slug] = { done, milestones: total, progress: total ? Math.round((done / total) * 100) : 0 };
@@ -127,20 +124,22 @@ function GrowthPage() {
     <AppShell title={ui.title} subtitle={ui.subtitle}>
       <PersonalLine pool="growth" className="mb-6" />
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {journeysEn.map((j) => {
-          const title = lang === "fr" ? journeysFr[j.slug] ?? j.title : j.title;
-          const stat = stats[j.slug] ?? { done: j.done, milestones: j.milestones, progress: j.progress };
+        {journeyList.map((j) => {
+          const title = pickLang(j.title, lang);
+          const toneKey = TONE_BY_SLUG[j.slug] ?? "primary";
+          const Icon = ICON_BY_SLUG[j.slug] ?? Brain;
+          const stat = stats[j.slug] ?? { done: 0, milestones: j.milestones.length, progress: 0 };
           return (
-            <article key={j.slug} className={`rounded-3xl border border-border/60 bg-gradient-to-br ${tone(j.tone)} p-6 shadow-soft transition hover:-translate-y-0.5`}>
+            <article key={j.slug} className={`rounded-3xl border border-border/60 bg-gradient-to-br ${tone(toneKey)} p-6 shadow-soft transition hover:-translate-y-0.5`}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <span className="grid h-11 w-11 place-items-center rounded-2xl bg-card shadow-soft">
-                    <j.icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" />
                   </span>
                   <h3 className="mt-4 font-display text-lg font-bold text-foreground">{title}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{ui.milestonesCelebrated(stat.done, stat.milestones)}</p>
                 </div>
-                <Ring value={stat.progress} color={ringColors[j.tone]} />
+                <Ring value={stat.progress} color={ringColors[toneKey]} />
               </div>
 
               <div className="mt-5 flex items-center gap-1.5">
@@ -180,7 +179,7 @@ function GrowthPage() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{ui.learningSub}</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {richSubjects.map((s) => {
+            {subjectList.map((s) => {
               const Icon = subjectIcons[s.slug] ?? BookOpen;
               return (
                 <Link

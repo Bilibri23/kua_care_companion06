@@ -221,6 +221,96 @@ export type Database = {
         }
         Relationships: []
       }
+      growth_journeys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          intro_en: string
+          intro_fr: string | null
+          milestones: Json
+          published: boolean
+          slug: string
+          sort_order: number
+          title_en: string
+          title_fr: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intro_en?: string
+          intro_fr?: string | null
+          milestones?: Json
+          published?: boolean
+          slug: string
+          sort_order?: number
+          title_en: string
+          title_fr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intro_en?: string
+          intro_fr?: string | null
+          milestones?: Json
+          published?: boolean
+          slug?: string
+          sort_order?: number
+          title_en?: string
+          title_fr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      learning_subjects: {
+        Row: {
+          blurb_en: string
+          blurb_fr: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          published: boolean
+          slug: string
+          sort_order: number
+          title_en: string
+          title_fr: string | null
+          topics: Json
+          updated_at: string
+        }
+        Insert: {
+          blurb_en?: string
+          blurb_fr?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published?: boolean
+          slug: string
+          sort_order?: number
+          title_en: string
+          title_fr?: string | null
+          topics?: Json
+          updated_at?: string
+        }
+        Update: {
+          blurb_en?: string
+          blurb_fr?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published?: boolean
+          slug?: string
+          sort_order?: number
+          title_en?: string
+          title_fr?: string | null
+          topics?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expression_cards: {
         Row: {
           category: string

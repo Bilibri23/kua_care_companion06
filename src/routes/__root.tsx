@@ -15,7 +15,6 @@ import { ChildrenProvider } from "@/lib/children";
 import { DelightProvider } from "@/lib/personalize";
 import { RemindersProvider } from "@/lib/reminders";
 import { OnboardingGate } from "@/components/OnboardingGate";
-import { HelpBot } from "@/components/HelpBot";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -133,7 +132,6 @@ function RootComponent() {
                 <OnboardingGate>
                   <Outlet />
                 </OnboardingGate>
-                <HelpBot />
                 <Toaster richColors position="top-center" />
               </RemindersProvider>
             </DelightProvider>

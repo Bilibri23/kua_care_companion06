@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Object.keys(localStorage).forEach((k) => {
           if (k.startsWith("kua:chat") || k.startsWith("kua:mood")) localStorage.removeItem(k);
         });
-        // Notify listeners (HelpBot, etc.)
+        // Notify listeners of sign-out.
         window.dispatchEvent(new CustomEvent("kua:signout"));
         void keep;
       } catch {

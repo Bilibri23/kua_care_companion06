@@ -34,7 +34,6 @@ import { Route as TestsSlugRouteImport } from './routes/tests.$slug'
 import { Route as LearnSlugRouteImport } from './routes/learn.$slug'
 import { Route as JourneySlugRouteImport } from './routes/journey.$slug'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
-import { Route as ApiHelpRouteImport } from './routes/api/help'
 import { Route as ApiAiRouteImport } from './routes/api/ai'
 
 const WinsRoute = WinsRouteImport.update({
@@ -162,11 +161,6 @@ const ArticleSlugRoute = ArticleSlugRouteImport.update({
   path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHelpRoute = ApiHelpRouteImport.update({
-  id: '/api/help',
-  path: '/api/help',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAiRoute = ApiAiRouteImport.update({
   id: '/api/ai',
   path: '/api/ai',
@@ -196,7 +190,6 @@ export interface FileRoutesByFullPath {
   '/wheel': typeof WheelRoute
   '/wins': typeof WinsRoute
   '/api/ai': typeof ApiAiRoute
-  '/api/help': typeof ApiHelpRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/learn/$slug': typeof LearnSlugRoute
@@ -225,7 +218,6 @@ export interface FileRoutesByTo {
   '/wheel': typeof WheelRoute
   '/wins': typeof WinsRoute
   '/api/ai': typeof ApiAiRoute
-  '/api/help': typeof ApiHelpRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/learn/$slug': typeof LearnSlugRoute
@@ -255,7 +247,6 @@ export interface FileRoutesById {
   '/wheel': typeof WheelRoute
   '/wins': typeof WinsRoute
   '/api/ai': typeof ApiAiRoute
-  '/api/help': typeof ApiHelpRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/journey/$slug': typeof JourneySlugRoute
   '/learn/$slug': typeof LearnSlugRoute
@@ -286,7 +277,6 @@ export interface FileRouteTypes {
     | '/wheel'
     | '/wins'
     | '/api/ai'
-    | '/api/help'
     | '/article/$slug'
     | '/journey/$slug'
     | '/learn/$slug'
@@ -315,7 +305,6 @@ export interface FileRouteTypes {
     | '/wheel'
     | '/wins'
     | '/api/ai'
-    | '/api/help'
     | '/article/$slug'
     | '/journey/$slug'
     | '/learn/$slug'
@@ -344,7 +333,6 @@ export interface FileRouteTypes {
     | '/wheel'
     | '/wins'
     | '/api/ai'
-    | '/api/help'
     | '/article/$slug'
     | '/journey/$slug'
     | '/learn/$slug'
@@ -374,7 +362,6 @@ export interface RootRouteChildren {
   WheelRoute: typeof WheelRoute
   WinsRoute: typeof WinsRoute
   ApiAiRoute: typeof ApiAiRoute
-  ApiHelpRoute: typeof ApiHelpRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   JourneySlugRoute: typeof JourneySlugRoute
   LearnSlugRoute: typeof LearnSlugRoute
@@ -557,13 +544,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/help': {
-      id: '/api/help'
-      path: '/api/help'
-      fullPath: '/api/help'
-      preLoaderRoute: typeof ApiHelpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/ai': {
       id: '/api/ai'
       path: '/api/ai'
@@ -607,7 +587,6 @@ const rootRouteChildren: RootRouteChildren = {
   WheelRoute: WheelRoute,
   WinsRoute: WinsRoute,
   ApiAiRoute: ApiAiRoute,
-  ApiHelpRoute: ApiHelpRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   JourneySlugRoute: JourneySlugRoute,
   LearnSlugRoute: LearnSlugRoute,
